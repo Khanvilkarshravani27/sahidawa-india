@@ -1,4 +1,4 @@
-name: "\uD83D\uDD00 Issue Assignment Guard (/assign command handler)"
+name: "Issue Assignment Guard (/assign command handler)"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # WHEN: Fires on issue comments (for /assign commands) and on issue assignment.

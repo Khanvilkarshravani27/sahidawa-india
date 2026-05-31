@@ -1,4 +1,4 @@
-name: "\U0001F680 Auto-Assign Issue Opener & Smart Onboarding"
+name: "Auto-Assign Issue Opener & Smart Onboarding"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # WHEN: Fires ONLY when a new issue is opened.
