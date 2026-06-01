@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { ChatBubble, type Message } from "./components/ChatBubble";
 import { ActionCard } from "./components/ActionCard";
 import { TypingIndicator } from "./components/TypingIndicator";
@@ -48,7 +49,6 @@ const IconMic = ({ size = 20 }: { size?: number }) => (
     >
         <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z" />
         <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-        import { useTranslations } from "next-intl";
         <line x1="12" y1="19" x2="12" y2="22" />
         <line x1="8" y1="22" x2="16" y2="22" />
     </svg>
@@ -122,6 +122,7 @@ export default function ChatUI() {
     const messagesContainerRef = useRef<HTMLElement>(null);
     const inputRef = useRef<HTMLTextAreaElement>(null);
     const recRef = useRef<any>(null);
+    const t = useTranslations("chat");
 
     useEffect(() => {
         const container = messagesContainerRef.current;
@@ -141,19 +142,17 @@ export default function ChatUI() {
     }, [input]);
 
     const sendMessage = useCallback(
-        async (text: string) => {
-            const t = text.trim();
-            if (!t || isTyping) return;
-            lastUserText.current = t;
+            async (text: string) => {
+                const trimmed = text.trim();
+                if (!trimmed || isTyping) return;
+                lastUserText.current = trimmed;
             setShowWelcome(false);
-
-            const userMsg: Message = {
-            const t = useTranslations("chat");
-                id: genId(),
-                role: "user",
-                content: t,
-                content: t("welcome"),
-            };
+                const userMsg: Message = {
+                    id: genId(),
+                    role: "user",
+                    content: trimmed,
+                    timestamp: new Date(),
+                };
             setMessages((prev) => [...prev, userMsg]);
             setInput("");
             setIsTyping(true);
@@ -324,7 +323,6 @@ export default function ChatUI() {
                             }`}
                         >
                             {isListening ? <IconStop /> : <IconMic size={20} />}
-                                        {t("quick_actions")}
 
                         <textarea
                             ref={inputRef}
