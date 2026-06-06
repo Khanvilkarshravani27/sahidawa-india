@@ -408,6 +408,66 @@ def assemble_final_post(ai_content: str, pr: dict) -> str:
     )
 
 
+def crop_and_upload_og_image(pr: dict) -> str:
+    fallback_url = f"https://opengraph.githubassets.com/1/{pr['repo']}/pull/{pr['number']}"
+    try:
+        from PIL import Image
+        from io import BytesIO
+        
+        print(f"📥 Downloading GitHub OG image: {fallback_url}")
+        res = requests.get(fallback_url, timeout=15)
+        if res.status_code != 200:
+            print(f"⚠️ Failed to download GitHub OG image. Code: {res.status_code}. Using uncropped URL.")
+            return fallback_url
+            
+        img = Image.open(BytesIO(res.content))
+        w, h = img.size
+        print(f"📏 Original image size: {w}x{h}")
+        
+        # Crop the bottom 24 pixels (the colored language bar)
+        cropped_img = img.crop((0, 0, w, h - 24))
+        
+        img_buffer = BytesIO()
+        cropped_img.save(img_buffer, "PNG")
+        img_data = img_buffer.getvalue()
+        
+        # Upload to Catbox
+        print("📤 Uploading cropped image to Catbox...")
+        try:
+            files = {
+                'reqtype': (None, 'fileupload'),
+                'fileToUpload': ('shoutout.png', img_data, 'image/png')
+            }
+            res = requests.post('https://catbox.moe/user/api.php', files=files, timeout=15)
+            if res.status_code == 200 and "files.catbox.moe" in res.text:
+                uploaded_url = res.text.strip()
+                print(f"✅ Successfully uploaded to Catbox: {uploaded_url}")
+                return uploaded_url
+        except Exception as ce:
+            print(f"⚠️ Catbox upload failed ({ce}). Trying tmpfiles.org fallback...")
+
+        # Upload to tmpfiles.org
+        try:
+            files = {
+                'file': ('shoutout.png', img_data, 'image/png')
+            }
+            res = requests.post('https://tmpfiles.org/api/v1/upload', files=files, timeout=15)
+            if res.status_code == 200:
+                json_resp = res.json()
+                if json_resp.get("status") == "success":
+                    raw_url = json_resp["data"]["url"]
+                    uploaded_url = raw_url.replace("https://tmpfiles.org/", "https://tmpfiles.org/dl/")
+                    print(f"✅ Successfully uploaded to tmpfiles.org: {uploaded_url}")
+                    return uploaded_url
+        except Exception as te:
+            print(f"⚠️ tmpfiles.org upload failed ({te})")
+            
+    except Exception as e:
+        print(f"⚠️ Image crop/upload process failed: {e}. Using uncropped URL.")
+        
+    return fallback_url
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # STEP 3 — Send to Make.com Webhook (Make posts to LinkedIn Company Page)
 # ─────────────────────────────────────────────────────────────────────────────
@@ -430,15 +490,22 @@ def send_to_make_webhook(post_text: str, pr: dict) -> None:
     labels = pr["labels"].lower()
     tier = "level:critical" if "level:critical" in labels else "level:advanced"
 
-    # Use the clean, official GitHub PR OpenGraph image as requested
-    image_url = f"https://opengraph.githubassets.com/1/{pr['repo']}/pull/{pr['number']}"
+    # Crop and upload GitHub OG image (removing bottom language bar)
+    image_url = crop_and_upload_og_image(pr)
     
     payload = {
         "post_text": post_text,
+        "text": post_text,
+        "commentary": post_text,
+        "description": post_text,
+        "message": post_text,
+        "content": post_text,
         "pr_title": pr["title"],
         "pr_author": pr["author"],
         "author_avatar": pr.get("author_avatar", ""),
         "image_url": image_url,
+        "image": image_url,
+        "imageUrl": image_url,
         "pr_url": pr["url"],
         "pr_number": pr["number"],
         "tier": tier,
