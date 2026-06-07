@@ -91,11 +91,7 @@ jobs:
                 owner: repo.owner, repo: repo.repo, username: issueAuthor
               });
               if (authorPerm.permission === 'admin' || authorPerm.permission === 'write') {
-                core.info('Issue was crafted by Maintainer/Owner — blocking auto-assignment.');
-                await github.rest.issues.createComment({
-                  owner: repo.owner, repo: repo.repo, issue_number: issueNumber,
-                  body: '\u274C **Request Denied**\n\nHi @' + commenter + ', auto-assignment via `/assign` is disabled for issues created by project maintainers or admins. A maintainer will manually assign this issue when appropriate.'
-                });
+                core.info('Issue was crafted by Maintainer/Owner — blocking auto-assignment silently.');
                 return;
               }
             } catch (err) {
