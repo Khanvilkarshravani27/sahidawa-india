@@ -3,17 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useRouter } from "@/i18n/routing";
-import {
-    AlertTriangle,
-    ArrowLeft,
-    CheckCircle2,
-    Clock,
-    ExternalLink,
-    LogIn,
-    Pill,
-    Trash2,
-    XCircle,
-} from "lucide-react";
+import { AlertTriangle, CheckCircle2, Clock, LogIn, Pill, Trash2, XCircle } from "lucide-react";
 import { Link } from "@/i18n/routing";
 import { PageHeader } from "../../components/PageHeader";
 import Card from "@/components/Card";
