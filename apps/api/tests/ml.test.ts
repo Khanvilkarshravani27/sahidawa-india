@@ -15,6 +15,14 @@ jest.mock("../src/middleware/auth", () => ({
     AuthenticatedRequest: Object,
 }));
 
+jest.mock("node:dns", () => ({
+    promises: {
+        resolve4: jest.fn(),
+    },
+}));
+
+import { promises as dnsMock } from "node:dns";
+
 function buildApp() {
     const app = express();
     app.use(express.json());
@@ -30,6 +38,8 @@ describe("ml routes", () => {
 
     beforeEach(() => {
         process.env.ML_SERVICE_URL = "http://ml-service.test";
+        jest.clearAllMocks();
+        (dnsMock.resolve4 as jest.Mock).mockResolvedValue(["203.0.113.42"]);
     });
 
     afterEach(() => {
@@ -90,5 +100,121 @@ describe("ml routes", () => {
 
         assert.equal(response.status, 500);
         assert.equal(response.body.code, "ML_SERVICE_URL_MISSING");
+    });
+
+    it("rejects requests to private IP addresses (SSRF protection)", async () => {
+        const response = await request(buildApp())
+            .post("/api/ml/analyze")
+            .set("Authorization", VALID_TOKEN)
+            .send({ imageUrl: "https://192.168.1.1/admin" });
+
+        assert.equal(response.status, 400);
+    });
+
+    it("rejects requests to localhost (SSRF protection)", async () => {
+        const response = await request(buildApp())
+            .post("/api/ml/analyze")
+            .set("Authorization", VALID_TOKEN)
+            .send({ imageUrl: "https://localhost:8080/secret" });
+
+        assert.equal(response.status, 400);
+    });
+
+    it("rejects requests to 127.0.0.1 (SSRF protection)", async () => {
+        const response = await request(buildApp())
+            .post("/api/ml/analyze")
+            .set("Authorization", VALID_TOKEN)
+            .send({ imageUrl: "https://127.0.0.1/internal" });
+
+        assert.equal(response.status, 400);
+    });
+
+    it("rejects requests to 10.x.x.x private addresses (SSRF protection)", async () => {
+        const response = await request(buildApp())
+            .post("/api/ml/analyze")
+            .set("Authorization", VALID_TOKEN)
+            .send({ imageUrl: "https://10.0.0.1/config" });
+
+        assert.equal(response.status, 400);
+    });
+
+    it("rejects requests to .internal hostnames (SSRF protection)", async () => {
+        const response = await request(buildApp())
+            .post("/api/ml/analyze")
+            .set("Authorization", VALID_TOKEN)
+            .send({ imageUrl: "https://internal-admin-panel.internal/secret" });
+
+        assert.equal(response.status, 400);
+    });
+
+    it("rejects requests to .local hostnames (SSRF protection)", async () => {
+        const response = await request(buildApp())
+            .post("/api/ml/analyze")
+            .set("Authorization", VALID_TOKEN)
+            .send({ imageUrl: "https://service.local/api" });
+
+        assert.equal(response.status, 400);
+    });
+
+    it("rejects requests to 169.254.169.254 (cloud metadata SSRF)", async () => {
+        const response = await request(buildApp())
+            .post("/api/ml/analyze")
+            .set("Authorization", VALID_TOKEN)
+            .send({ imageUrl: "https://169.254.169.254/latest/meta-data/" });
+
+        assert.equal(response.status, 400);
+    });
+
+    it("rejects .nip.io DNS rebinding domains (SSRF protection)", async () => {
+        const response = await request(buildApp())
+            .post("/api/ml/analyze")
+            .set("Authorization", VALID_TOKEN)
+            .send({ imageUrl: "https://127.0.0.1.nip.io/secret" });
+
+        assert.equal(response.status, 400);
+    });
+
+    it("blocks public-looking domains whose DNS resolves to a private IP", async () => {
+        (dnsMock.resolve4 as jest.Mock).mockResolvedValueOnce(["10.0.0.5"]);
+
+        const response = await request(buildApp())
+            .post("/api/ml/analyze")
+            .set("Authorization", VALID_TOKEN)
+            .send({ imageUrl: "https://innocent-looking.example.test/data" });
+
+        assert.equal(response.status, 400);
+    });
+
+    it("allows domains whose DNS resolves to a public IP", async () => {
+        (dnsMock.resolve4 as jest.Mock).mockResolvedValueOnce(["203.0.113.42"]);
+
+        global.fetch = async () =>
+            new Response(
+                JSON.stringify({
+                    isFake: false,
+                    confidence: 0.81,
+                    verdict: "likely_genuine",
+                    details: "Passed visual quality scan.",
+                }),
+                { status: 200, headers: { "Content-Type": "application/json" } }
+            );
+
+        const response = await request(buildApp())
+            .post("/api/ml/analyze")
+            .set("Authorization", VALID_TOKEN)
+            .send({ imageUrl: "https://public-host.example.test/photo.jpg" });
+
+        assert.equal(response.status, 200);
+    });
+
+    it("blocks domains when DNS resolution fails (fail closed)", async () => {
+        (dnsMock.resolve4 as jest.Mock).mockRejectedValueOnce(new Error("DNS resolution failed"));
+
+        const response = await request(buildApp())
+            .post("/api/ml/analyze")
+            .set("Authorization", VALID_TOKEN)
+            .send({ imageUrl: "https://unresolvable.example.test/img.jpg" });
+
+        assert.equal(response.status, 400);
     });
 });
