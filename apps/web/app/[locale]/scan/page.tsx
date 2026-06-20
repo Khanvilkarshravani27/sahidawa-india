@@ -566,6 +566,40 @@ export default function ScanPage() {
                     <History size={18} />
                     {tScan("viewHistory")}
                 </Link>
+                <div className="w-full max-w-md rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm">
+                    <h3 className="mb-4 text-center text-lg font-bold text-white">Scan Controls</h3>
+
+                    <div className="flex justify-center gap-4">
+                        <button
+                            onClick={() => setIsCameraActive((prev) => !prev)}
+                            disabled={isOffline}
+                            className={`flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-bold shadow-lg transition-colors focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-black focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 ${
+                                isCameraActive
+                                    ? "bg-red-500 text-white hover:bg-red-400"
+                                    : "bg-emerald-500 text-white hover:bg-emerald-400"
+                            }`}
+                        >
+                            <ScanLine size={18} />
+                            {isCameraActive ? tScan("stopScanner") : tScan("ScanBarcode")}
+                        </button>
+                        <label
+                            htmlFor={isOffline ? undefined : "medicine-upload"}
+                            onClick={(e) => {
+                                if (isOffline) {
+                                    e.preventDefault();
+                                    toast.error(
+                                        "You are currently offline. Please check your internet connection."
+                                    );
+                                }
+                            }}
+                            className={`flex cursor-pointer items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-bold text-black shadow-lg transition-colors hover:bg-slate-200 ${
+                                isOffline ? "cursor-not-allowed opacity-50" : ""
+                            }`}
+                        >
+                            <Layers size={18} />
+                            {tScan("uploadPhoto")}
+                        </label>
+                    </div>
 
                 <div className="flex gap-4">
                     <button
