@@ -14,6 +14,7 @@ import {
     BellOff,
     RefreshCw,
     Download,
+    Building2,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import RecallPushSubscriber from "@/components/alerts/RecallPushSubscriber";
