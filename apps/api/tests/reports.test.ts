@@ -305,6 +305,69 @@ describe("Reports API Routes", () => {
             expect(insertedPayload.risk_score).toBe(0.9);
             expect(insertedPayload.duplicate_group_id).toBe("original-report-id");
         });
+
+        it("does not leak stack trace or internal error details when validateReport throws", async () => {
+            const originalEnv = process.env.NODE_ENV;
+            process.env.NODE_ENV = "production";
+
+            const { validateReport } = require("../src/services/reportValidation.service");
+            validateReport.mockRejectedValueOnce(new Error("DB connection failed: ECONNREFUSED"));
+
+            const payload = {
+                medicineName: "Aspirin 500mg",
+                manufacturer: "TestCo",
+                description: "This is a detailed description of the issue",
+                images: ["https://example.com/image1.jpg"],
+                pharmacyName: "Test Pharmacy",
+                address: "123 Main St",
+                city: "Delhi",
+                state: "Delhi",
+                pincode: "110001",
+            };
+
+            const response = await request(app)
+                .post("/api/reports")
+                .set("X-Forwarded-For", "9.9.9.9")
+                .send(payload);
+
+            process.env.NODE_ENV = originalEnv;
+
+            expect(response.status).toBe(500);
+            expect(response.body).not.toHaveProperty("stack");
+            expect(response.body).not.toHaveProperty("details");
+            expect(response.body.error).not.toHaveProperty("stack");
+            expect(JSON.stringify(response.body)).not.toContain("ECONNREFUSED");
+            expect(JSON.stringify(response.body)).not.toContain(".ts");
+        });
+
+        it("delegates errors to the global error handler instead of the inline catch block", async () => {
+            const { validateReport } = require("../src/services/reportValidation.service");
+            validateReport.mockRejectedValueOnce(new Error("Simulated internal failure"));
+
+            const payload = {
+                medicineName: "Aspirin 500mg",
+                manufacturer: "TestCo",
+                description: "This is a detailed description of the issue",
+                images: ["https://example.com/image1.jpg"],
+                pharmacyName: "Test Pharmacy",
+                address: "123 Main St",
+                city: "Delhi",
+                state: "Delhi",
+                pincode: "110001",
+            };
+
+            const response = await request(app)
+                .post("/api/reports")
+                .set("X-Forwarded-For", "9.9.9.8")
+                .send(payload);
+
+            // Shape matches errorHandler's { success, error: { message, ... } }
+            // contract, not the old inline { error, details, stack } shape.
+            expect(response.status).toBe(500);
+            expect(response.body).toHaveProperty("success", false);
+            expect(response.body.error).toHaveProperty("message");
+            expect(response.body).not.toHaveProperty("details");
+        });
     });
 
     describe("GET /api/reports/mine", () => {
@@ -476,6 +539,70 @@ describe("Reports API Routes", () => {
 
                 expect(response.status).toBe(200);
             }
+        });
+
+        it("resets broadcasted=false on the district_alerts upsert when threshold is crossed", async () => {
+            const updatedReport = {
+                id: "report-id-123",
+                district: "Delhi",
+                reported_brand_name: "Fake Medicine",
+                status: "verified_fake",
+                created_at: "2026-06-01T00:00:00Z",
+            };
+
+            let upsertPayload: Record<string, unknown> | null = null;
+            const originalFrom = mockedSupabase.from;
+
+            (mockedSupabase.from as jest.Mock) = jest.fn().mockImplementation((table: string) => {
+                if (table === "counterfeit_reports") {
+                    return {
+                        select: jest.fn().mockImplementation((_cols?: string, opts?: any) => {
+                            if (opts && opts.head) {
+                                return {
+                                    eq: jest.fn().mockReturnValue({
+                                        eq: jest.fn().mockReturnValue({
+                                            eq: jest.fn().mockResolvedValue({ count: 5, error: null }),
+                                        }),
+                                    }),
+                                };
+                            }
+                            return {
+                                eq: jest.fn().mockReturnValue({
+                                    single: jest.fn().mockResolvedValue({ data: { id: "report-id-123" }, error: null }),
+                                }),
+                            };
+                        }),
+                        update: jest.fn().mockReturnValue({
+                            eq: jest.fn().mockReturnValue({
+                                select: jest.fn().mockReturnValue({
+                                    single: jest.fn().mockResolvedValue({ data: updatedReport, error: null }),
+                                }),
+                            }),
+                        }),
+                    };
+                }
+                if (table === "district_alerts") {
+                    return {
+                        upsert: jest.fn().mockImplementation((payload: Record<string, unknown>) => {
+                            upsertPayload = payload;
+                            return Promise.resolve({ data: null, error: null });
+                        }),
+                    };
+                }
+                return {};
+            });
+
+            const response = await request(app)
+                .patch("/api/reports/report-id-123/status")
+                .set("Authorization", "Bearer admin-token")
+                .set("X-Admin", "true")
+                .send({ status: "verified_fake" });
+
+            mockedSupabase.from = originalFrom;
+
+            expect(response.status).toBe(200);
+            expect(upsertPayload).not.toBeNull();
+            expect(upsertPayload).toHaveProperty("broadcasted", false);
         });
     });
 });
