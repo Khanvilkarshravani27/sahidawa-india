@@ -13,9 +13,18 @@ jest.mock("@/src/components/AuthProvider", () => ({
 
 jest.mock("next/image", () => ({
     __esModule: true,
-    default: ({ alt = "", ...props }: { alt?: string; [key: string]: unknown }) => (
-        <img alt={alt} {...props} />
-    ),
+    default: ({
+        alt = "",
+        src,
+        ...props
+    }: {
+        alt?: string;
+        src: string;
+        [key: string]: unknown;
+    }) => {
+        const { priority, ...rest } = props as any;
+        return <img src={src} alt={alt} {...rest} />;
+    },
 }));
 
 jest.mock("next-intl", () => ({
