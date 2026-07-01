@@ -875,7 +875,19 @@ router.post(
     async (req: Request, res: Response) => {
         const idempotencyKey = (req as any).idempotencyKey;
         const { deviceId, clientUpdatedAt } = req.body;
-        const metadata = req.body.metadata ? JSON.parse(req.body.metadata) : null;
+        let metadata = null;
+        if (req.body.metadata) {
+            try {
+                metadata = JSON.parse(req.body.metadata, (key, value) => {
+                    if (key === "__proto__" || key === "constructor" || key === "prototype") {
+                        return undefined;
+                    }
+                    return value;
+                });
+            } catch (e) {
+                // Ignore parse errors
+            }
+        }
 
         // Use a generated scanId from metadata or fallback to a new one
         const scanId = metadata?.id || crypto.randomUUID();
