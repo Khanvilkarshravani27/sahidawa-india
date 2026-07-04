@@ -32,6 +32,7 @@ import {
     queueReport,
     getPendingCount,
 } from "@/lib/offlineStorage";
+import { useTranslations } from "next-intl";
 
 // ─── Cloudinary env ────────────────────────────────────────────────────────────
 // Uploads are now securely routed through our backend API (/api/upload),
@@ -49,39 +50,33 @@ const sanitize = (v: string): string => {
 };
 
 // ─── Zod schema ────────────────────────────────────────────────────────────────
-const schema = z.object({
-    medicineName: z
-        .string()
-        .transform(sanitize)
-        .pipe(z.string().min(2, "At least 2 characters required")),
-    manufacturer: z
-        .string()
-        .transform(sanitize)
-        .pipe(z.string().min(2, "At least 2 characters required")),
-    description: z
-        .string()
-        .transform(sanitize)
-        .pipe(z.string().min(20, "Please provide at least 20 characters")),
-    images: z.array(z.string().url()).min(1, "At least one photo is required"),
-    pharmacyName: z.string().transform(sanitize).pipe(z.string().min(2, "Required")),
-    address: z.string().transform(sanitize).pipe(z.string().min(5, "Required")),
-    city: z.string().transform(sanitize).pipe(z.string().min(2, "Required")),
-    state: z.string().transform(sanitize).pipe(z.string().min(2, "Required")),
-    pincode: z
-        .string()
-        .transform(sanitize)
-        .pipe(
-            z
-                .string()
-                .regex(
-                    /^[1-9][0-9]{5}$/,
-                    "Enter a valid 6-digit Indian Pincode (cannot start with 0)"
-                )
-        ),
-    scannedBarcode: z.string().optional(),
-    medicineId: z.string().optional(),
-});
-export type FormValues = z.infer<typeof schema>;
+const buildSchema = (t: ReturnType<typeof useTranslations>) =>
+    z.object({
+        medicineName: z
+            .string()
+            .transform(sanitize)
+            .pipe(z.string().min(2, t("wizard.validation.minChars"))),
+        manufacturer: z
+            .string()
+            .transform(sanitize)
+            .pipe(z.string().min(2, t("wizard.validation.minChars"))),
+        description: z
+            .string()
+            .transform(sanitize)
+            .pipe(z.string().min(20, t("wizard.validation.descriptionMin"))),
+        images: z.array(z.string().url()).min(1, t("wizard.validation.imagesRequired")),
+        pharmacyName: z.string().transform(sanitize).pipe(z.string().min(2, t("wizard.validation.required"))),
+        address: z.string().transform(sanitize).pipe(z.string().min(5, t("wizard.validation.required"))),
+        city: z.string().transform(sanitize).pipe(z.string().min(2, t("wizard.validation.required"))),
+        state: z.string().transform(sanitize).pipe(z.string().min(2, t("wizard.validation.required"))),
+        pincode: z
+            .string()
+            .transform(sanitize)
+            .pipe(z.string().regex(/^[1-9][0-9]{5}$/, t("wizard.validation.pincodeInvalid"))),
+        scannedBarcode: z.string().optional(),
+        medicineId: z.string().optional(),
+    });
+export type FormValues = z.infer<ReturnType<typeof buildSchema>>;
 
 const EMPTY: FormValues = {
     medicineName: "",
@@ -105,9 +100,9 @@ const STEP_KEYS: Record<number, (keyof FormValues)[]> = {
 };
 
 const STEPS = [
-    { n: 1, title: "Medicine Details", code: "MED" },
-    { n: 2, title: "Photo Evidence", code: "IMG" },
-    { n: 3, title: "Location & Submit", code: "LOC" },
+    { n: 1, code: "MED" },
+    { n: 2, code: "IMG" },
+    { n: 3, code: "LOC" },
 ];
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
@@ -127,11 +122,11 @@ interface UnavailableImageAnalysis {
 
 type ImageAnalysisState = ImageEntry["analysis"];
 
-const analysisText: Record<NonNullable<ImageAnalysisState>["verdict"], string> = {
-    likely_genuine: "Likely genuine",
-    suspicious: "Suspicious",
-    likely_fake: "Likely fake",
-    unavailable: "Analysis unavailable",
+const analysisTextKey: Record<NonNullable<ImageAnalysisState>["verdict"], string> = {
+    likely_genuine: "wizard.step2.analysis.likelyGenuine",
+    suspicious: "wizard.step2.analysis.suspicious",
+    likely_fake: "wizard.step2.analysis.likelyFake",
+    unavailable: "wizard.step2.analysis.unavailable",
 };
 
 const analysisTone: Record<NonNullable<ImageAnalysisState>["verdict"], string> = {
@@ -145,14 +140,14 @@ const analysisTone: Record<NonNullable<ImageAnalysisState>["verdict"], string> =
         "border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-300",
 };
 
-const unavailableAnalysis = (error: unknown): UnavailableImageAnalysis => ({
+const unavailableAnalysis = (
+    error: unknown,
+    t: ReturnType<typeof useTranslations>
+): UnavailableImageAnalysis => ({
     isFake: false,
     confidence: 0,
     verdict: "unavailable",
-    details:
-        error instanceof Error
-            ? error.message
-            : "Image analysis could not be completed. Your report can still be submitted.",
+    details: error instanceof Error ? error.message : t("wizard.step2.analysisUnavailableDetails"),
 });
 
 // ─── Animation variants ────────────────────────────────────────────────────────
@@ -318,6 +313,8 @@ const inp = (err?: boolean) =>
 
 // ─── Step progress bar ─────────────────────────────────────────────────────────
 function Progress({ current }: { current: number }) {
+    const t = useTranslations("Report");
+    const stepTitle = (n: number) => t(`wizard.steps.step${n}.title`);
     const pct = ((current - 1) / 2) * 100;
     return (
         <div className="mb-8">
@@ -371,7 +368,7 @@ function Progress({ current }: { current: number }) {
                 })}
                 {/* Step label */}
                 <span className="ml-auto self-center text-xs font-semibold whitespace-nowrap text-(--color-text-secondary)">
-                    {current}/{STEPS.length} — {STEPS[current - 1].title}
+                    {current}/{STEPS.length} — {stepTitle(current)}
                 </span>
             </div>
         </div>
@@ -386,6 +383,7 @@ function Step1() {
         register,
         formState: { errors },
     } = useFormContext<FormValues>();
+    const t = useTranslations("Report");
     const medicineNameErrorId = useId();
     const manufacturerErrorId = useId();
     const descriptionErrorId = useId();
@@ -393,10 +391,10 @@ function Step1() {
     return (
         <div className="space-y-5">
             <div>
-                <FL req>Medicine Name</FL>
+                <FL req>{t("wizard.step1.medicineName.label")}</FL>
                 <input
                     {...register("medicineName")}
-                    placeholder="e.g. Augmentin 625 Duo"
+                    placeholder={t("wizard.step1.medicineName.placeholder")}
                     className={inp(!!errors.medicineName)}
                     aria-invalid={errors.medicineName ? "true" : undefined}
                     aria-describedby={errors.medicineName ? medicineNameErrorId : undefined}
@@ -404,10 +402,10 @@ function Step1() {
                 <FieldError messageId={medicineNameErrorId} msg={errors.medicineName?.message} />
             </div>
             <div>
-                <FL req>Manufacturer</FL>
+                <FL req>{t("wizard.step1.manufacturer.label")}</FL>
                 <input
                     {...register("manufacturer")}
-                    placeholder="e.g. Cipla Ltd."
+                    placeholder={t("wizard.step1.manufacturer.placeholder")}
                     className={inp(!!errors.manufacturer)}
                     aria-invalid={errors.manufacturer ? "true" : undefined}
                     aria-describedby={errors.manufacturer ? manufacturerErrorId : undefined}
@@ -415,11 +413,11 @@ function Step1() {
                 <FieldError messageId={manufacturerErrorId} msg={errors.manufacturer?.message} />
             </div>
             <div>
-                <FL req>Description of Concern</FL>
+                <FL req>{t("wizard.step1.description.label")}</FL>
                 <textarea
                     {...register("description")}
                     rows={4}
-                    placeholder="Describe unusual colour, smell, texture, packaging, reported side-effects…"
+                    placeholder={t("wizard.step1.description.placeholder")}
                     className={`${inp(!!errors.description)} resize-none`}
                     aria-invalid={errors.description ? "true" : undefined}
                     aria-describedby={errors.description ? descriptionErrorId : undefined}
@@ -444,6 +442,7 @@ function Step2({
         setValue,
         formState: { errors },
     } = useFormContext<FormValues>();
+    const t = useTranslations("Report");
     const [busy, setBusy] = useState(false);
     const [upErr, setUpErr] = useState<string | null>(null);
     const uploadErrorId = useId();
@@ -479,7 +478,7 @@ function Step2({
                 );
             })
             .catch((err) => {
-                const analysis = unavailableAnalysis(err);
+                const analysis = unavailableAnalysis(err, t);
                 setImages((currentImages) =>
                     currentImages.map((img) => (img.cloudUrl === url ? { ...img, analysis } : img))
                 );
@@ -507,7 +506,9 @@ function Step2({
                 onUploadComplete={handleUploadComplete}
                 onError={(err) => setUpErr(err)}
                 label={
-                    images.length > 0 ? "Upload another medicine photo" : "Upload medicine photo"
+                    images.length > 0
+                        ? t("wizard.step2.uploadAnotherLabel")
+                        : t("wizard.step2.uploadLabel")
                 }
                 disabled={busy}
             />
@@ -565,7 +566,7 @@ function Step2({
                                             remove(idx);
                                         }}
                                         className="flex h-8 w-8 items-center justify-center rounded-full bg-red-500 text-white shadow-md transition-all hover:bg-red-600 active:scale-95"
-                                        aria-label="Remove"
+                                        aria-label={t("wizard.step2.removeAriaLabel")}
                                     >
                                         <Icon.X />
                                     </button>
@@ -580,7 +581,7 @@ function Step2({
                                     <span
                                         className={`absolute top-2 left-2 rounded-full border px-2 py-1 text-[10px] font-bold shadow-sm ${analysisTone[img.analysis.verdict]}`}
                                     >
-                                        {analysisText[img.analysis.verdict]}
+                                        {t(analysisTextKey[img.analysis.verdict])}
                                     </span>
                                 )}
                             </motion.div>
@@ -598,10 +599,12 @@ function Step2({
                                 className={`rounded-xl border px-4 py-3 text-sm font-medium ${analysisTone[img.analysis.verdict]}`}
                             >
                                 <div className="flex flex-wrap items-center justify-between gap-2">
-                                    <span>{analysisText[img.analysis.verdict]}</span>
+                                    <span>{t(analysisTextKey[img.analysis.verdict])}</span>
                                     {img.analysis.verdict !== "unavailable" && (
                                         <span>
-                                            {Math.round(img.analysis.confidence * 100)}% confidence
+                                            {t("wizard.step2.confidence", {
+                                                percent: Math.round(img.analysis.confidence * 100),
+                                            })}
                                         </span>
                                     )}
                                 </div>
@@ -616,7 +619,7 @@ function Step2({
 
             {images.length === 0 && !busy && (
                 <p className="text-center text-sm font-medium text-(--color-text-muted)">
-                    Minimum 1 image required
+                    {t("wizard.step2.minImageRequired")}
                 </p>
             )}
         </div>
@@ -633,6 +636,7 @@ function Step3() {
         setValue,
         formState: { errors },
     } = useFormContext<FormValues>();
+    const t = useTranslations("Report");
     const pharmacyNameErrorId = useId();
     const addressErrorId = useId();
     const cityErrorId = useId();
@@ -667,10 +671,10 @@ function Step3() {
     return (
         <div className="space-y-5">
             <div>
-                <FL req>Pharmacy / Store Name</FL>
+                <FL req>{t("wizard.step3.pharmacyName.label")}</FL>
                 <input
                     {...register("pharmacyName")}
-                    placeholder="e.g. Apollo Pharmacy, MG Road"
+                    placeholder={t("wizard.step3.pharmacyName.placeholder")}
                     className={inp(!!errors.pharmacyName)}
                     aria-invalid={errors.pharmacyName ? "true" : undefined}
                     aria-describedby={errors.pharmacyName ? pharmacyNameErrorId : undefined}
@@ -678,10 +682,10 @@ function Step3() {
                 <FieldError messageId={pharmacyNameErrorId} msg={errors.pharmacyName?.message} />
             </div>
             <div>
-                <FL req>Street Address</FL>
+                <FL req>{t("wizard.step3.address.label")}</FL>
                 <input
                     {...register("address")}
-                    placeholder="e.g. 45, Park Street, Near Bus Stand"
+                    placeholder={t("wizard.step3.address.placeholder")}
                     className={inp(!!errors.address)}
                     aria-invalid={errors.address ? "true" : undefined}
                     aria-describedby={errors.address ? addressErrorId : undefined}
@@ -690,10 +694,10 @@ function Step3() {
             </div>
             <div className="grid grid-cols-2 gap-4">
                 <div>
-                    <FL req>City</FL>
+                    <FL req>{t("wizard.step3.city.label")}</FL>
                     <input
                         {...register("city")}
-                        placeholder="Mumbai"
+                        placeholder={t("wizard.step3.city.placeholder")}
                         className={inp(!!errors.city)}
                         aria-invalid={errors.city ? "true" : undefined}
                         aria-describedby={errors.city ? cityErrorId : undefined}
@@ -701,10 +705,10 @@ function Step3() {
                     <FieldError messageId={cityErrorId} msg={errors.city?.message} />
                 </div>
                 <div>
-                    <FL req>State</FL>
+                    <FL req>{t("wizard.step3.state.label")}</FL>
                     <input
                         {...register("state")}
-                        placeholder="Maharashtra"
+                        placeholder={t("wizard.step3.state.placeholder")}
                         className={inp(!!errors.state)}
                         aria-invalid={errors.state ? "true" : undefined}
                         aria-describedby={errors.state ? stateErrorId : undefined}
@@ -713,10 +717,10 @@ function Step3() {
                 </div>
             </div>
             <div className="max-w-[160px]">
-                <FL req>Pincode</FL>
+                <FL req>{t("wizard.step3.pincode.label")}</FL>
                 <input
                     {...register("pincode")}
-                    placeholder="400001"
+                    placeholder={t("wizard.step3.pincode.placeholder")}
                     maxLength={6}
                     inputMode="numeric"
                     className={inp(!!errors.pincode)}
@@ -741,6 +745,7 @@ function Success({
     reportId: string | null;
     queuedOffline?: boolean;
 }) {
+    const t = useTranslations("Report");
     const ref = reportId ? `RPT-${reportId.slice(0, 8).toUpperCase()}` : "RPT-PENDING";
     return (
         <motion.div
@@ -778,12 +783,14 @@ function Success({
 
             <div className="space-y-2">
                 <h3 className="text-2xl font-extrabold tracking-tight text-(--color-text-primary)">
-                    {queuedOffline ? "Report Saved Locally" : "Report Submitted"}
+                    {queuedOffline
+                        ? t("wizard.success.savedTitle")
+                        : t("wizard.success.submittedTitle")}
                 </h3>
                 <p className="mx-auto max-w-sm text-base leading-relaxed font-medium text-(--color-text-secondary)">
                     {queuedOffline
-                        ? "Network unavailable. Your report has been saved on this device and will auto-submit once your connection improves."
-                        : "Your report has been securely received and will be reviewed by our pharmacovigilance team within 48 hours."}
+                        ? t("wizard.success.offlineDescription")
+                        : t("wizard.success.onlineDescription")}
                 </p>
             </div>
 
@@ -791,7 +798,7 @@ function Success({
             {!queuedOffline && (
                 <div className="mx-auto w-full max-w-xs rounded-2xl border border-(--color-border-muted) bg-(--color-surface-muted) px-6 py-4 shadow-sm">
                     <p className="mb-1 text-xs font-bold tracking-wider text-(--color-text-muted) uppercase">
-                        Reference ID
+                        {t("wizard.success.referenceIdLabel")}
                     </p>
                     <p className="text-lg font-bold tracking-wide text-(--color-text-primary)">
                         {ref}
@@ -804,7 +811,7 @@ function Success({
                 onClick={onReset}
                 className="mt-2 rounded-xl bg-emerald-50 px-6 py-2.5 text-sm font-bold text-emerald-600 transition-colors duration-200 hover:bg-emerald-100 hover:text-emerald-700 active:scale-95 dark:bg-emerald-950/20 dark:text-emerald-300 dark:hover:bg-emerald-900/30 dark:hover:text-emerald-200"
             >
-                Submit another report
+                {t("wizard.success.submitAnother")}
             </button>
         </motion.div>
     );
@@ -814,6 +821,7 @@ function Success({
 // MAIN EXPORT
 // ─────────────────────────────────────────────────────────────────────────────
 export default function ReportWizard() {
+    const t = useTranslations("Report");
     const [step, setStep] = useState(1);
     const [dir, setDir] = useState(1);
     const [images, setImages] = useState<ImageEntry[]>([]);
@@ -837,6 +845,8 @@ export default function ReportWizard() {
         }
         return null;
     }, []);
+
+    const schema = useMemo(() => buildSchema(t), [t]);
 
     const methods = useForm<FormValues>({
         resolver: zodResolver(schema),
@@ -865,7 +875,7 @@ export default function ReportWizard() {
                     methods.reset(draft.values);
                     setStep(draft.step ?? 1);
                     setImages(draft.images ?? []);
-                    toast.info("Restored your unsaved report draft.");
+                    toast.info(t("wizard.toasts.restoredDraft"));
                 }
             } catch (err) {
                 console.error("Failed to restore draft:", err);
@@ -943,16 +953,12 @@ export default function ReportWizard() {
                 setReportId(null);
                 setQueuedOffline(true);
                 setDone(true);
-                toast.info(
-                    "You're offline. Your report has been saved locally and will auto-submit once connection improves."
-                );
+                toast.info(t("wizard.toasts.offlineSaved"));
             } catch (queueErr) {
                 console.error("Failed to queue report offline:", queueErr);
-                setSubmitErr(
-                    "You're offline and the report could not be saved locally. Please try again."
-                );
+                setSubmitErr(t("wizard.toasts.offlineQueueFailed"));
 
-                await handleApiError(queueErr, "Failed to save report locally.");
+                await handleApiError(queueErr, t("wizard.toasts.offlineQueueFailed"));
             } finally {
                 setSubmitting(false);
             }
@@ -980,9 +986,7 @@ export default function ReportWizard() {
                     setReportId(null);
                     setQueuedOffline(true);
                     setDone(true);
-                    toast.info(
-                        "Network slow. Your report has been saved locally and will auto-submit once connection improves."
-                    );
+                    toast.info(t("wizard.toasts.networkSlowSaved"));
                     return;
                 } catch (queueErr) {
                     console.error("Failed to queue report offline:", queueErr);
@@ -990,9 +994,7 @@ export default function ReportWizard() {
             }
 
             const errorMsg =
-                e instanceof Error
-                    ? e.message
-                    : "Submission failed. Please check your connection and try again.";
+                e instanceof Error ? e.message : t("wizard.toasts.submissionFailedGeneric");
             setSubmitErr(errorMsg);
             toast.error(errorMsg);
         } finally {
@@ -1031,23 +1033,21 @@ export default function ReportWizard() {
                                 <Icon.ShieldCheck />
                             </div>
                             <span className="text-xs font-bold tracking-wider text-emerald-400 uppercase">
-                                MedWatch Report
+                                {t("wizard.header.badge")}
                             </span>
                             {pendingCount > 0 && !done && (
                                 <span className="ml-auto flex items-center gap-1.5 rounded-full bg-amber-500/15 px-2.5 py-1 text-[10px] font-bold tracking-wide text-amber-300 uppercase">
                                     <Icon.Cloud />
-                                    {pendingCount} pending sync
+                                    {t("wizard.header.pendingSync", { count: pendingCount })}
                                 </span>
                             )}
                         </div>
                         <h2 className="relative z-10 text-3xl leading-tight font-extrabold tracking-tight text-white">
-                            {done ? "Report Received" : STEPS[step - 1].title}
+                            {done ? t("wizard.header.receivedTitle") : t(`wizard.steps.step${step}.title`)}
                         </h2>
                         {!done && (
                             <p className="relative z-10 mt-2 text-base font-medium text-slate-400">
-                                {step === 1 && "Identify the suspicious product"}
-                                {step === 2 && "Upload clear photos as evidence"}
-                                {step === 3 && "Where was the product purchased?"}
+                                {t(`wizard.steps.step${step}.description`)}
                             </p>
                         )}
                     </div>
@@ -1117,7 +1117,7 @@ export default function ReportWizard() {
                                         className="flex items-center gap-2 rounded-xl border border-transparent px-5 py-2.5 text-sm font-bold text-(--color-text-secondary) transition-all duration-200 hover:border-(--color-border-muted) hover:bg-(--color-surface-muted) hover:text-(--color-text-primary) active:scale-95 disabled:pointer-events-none disabled:opacity-0"
                                     >
                                         <Icon.Arrow left />
-                                        Back
+                                        {t("wizard.nav.back")}
                                     </button>
 
                                     {/* Mobile count */}
@@ -1133,7 +1133,7 @@ export default function ReportWizard() {
                                             disabled={submitting}
                                             className="flex items-center gap-2 rounded-xl bg-slate-900 px-7 py-3 text-sm font-bold text-white shadow-md shadow-slate-900/10 transition-all duration-200 hover:bg-slate-800 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-slate-100 dark:text-slate-900 dark:shadow-none dark:hover:bg-slate-200"
                                         >
-                                            Continue <Icon.Arrow />
+                                            {t("wizard.nav.continue")} <Icon.Arrow />
                                         </button>
                                     ) : (
                                         <button
@@ -1145,11 +1145,11 @@ export default function ReportWizard() {
                                             {submitting ? (
                                                 <>
                                                     <span className="h-5 w-5 animate-spin rounded-full border-[3px] border-white/30 border-t-white" />
-                                                    Submitting…
+                                                    {t("wizard.nav.submitting")}
                                                 </>
                                             ) : (
                                                 <>
-                                                    Submit Report <Icon.Send />
+                                                    {t("wizard.nav.submit")} <Icon.Send />
                                                 </>
                                             )}
                                         </button>
