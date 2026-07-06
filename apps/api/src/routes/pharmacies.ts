@@ -12,9 +12,12 @@ import { cacheMiddleware } from "../middleware/cache";
 import multer from "multer";
 import { buildOrConditions } from "../utils/db";
 import Papa from "papaparse";
-import { MAX_BULK_UPLOAD_ITEMS } from "@sahidawa/shared";
+import { MAX_BULK_UPLOAD_ITEMS, MAX_BULK_UPLOAD_FILE_SIZE_BYTES } from "@sahidawa/shared";
 
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: MAX_BULK_UPLOAD_FILE_SIZE_BYTES },
+});
 
 const router = Router();
 
