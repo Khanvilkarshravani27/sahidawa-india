@@ -1,4 +1,137 @@
 {
+    "Report": {
+        "pageHeader": {
+            "title": "घटना नोंदवा",
+            "subtitle": "सार्वजनिक सुरक्षा उपक्रम"
+        },
+        "hero": {
+            "badge": "सक्रिय निरीक्षण",
+            "titleLine1": "संदिग्ध",
+            "titleLine2": "औषधाची नोंद करा",
+            "description": "तुमची सतर्कता सार्वजनिक आरोग्याचे रक्षण करते. बनावट, कालबाह्य किंवा निकृष्ट दर्जाची औषधे नोंदवा. सर्व अहवाल भारताच्या फार्माकोविजिलन्स अधिकाऱ्यांकडून तपासले जातात."
+        },
+        "infoPanel": {
+            "quickVerify": {
+                "title": "त्वरीत तपासणी",
+                "subtitle": "हे आधी नोंदवले गेले आहे का ते पहा",
+                "placeholder": "बॅच क्रमांक भरा..."
+            },
+            "trustSafety": {
+                "title": "विश्वास आणि सुरक्षा",
+                "anonymity": {
+                    "title": "गुप्तता हमी",
+                    "description": "तुमची वैयक्तिक माहिती एन्क्रिप्ट केलेली आहे आणि कधीही सार्वजनिकरित्या शेअर केली जात नाही."
+                },
+                "verified": {
+                    "title": "फार्माकोविजिलन्सने सत्यापित",
+                    "description": "अलर्ट जारी करण्यापूर्वी अहवाल अधिकृत डेटाबेसेसमध्ये तपासले जातात."
+                },
+                "reviewCycle": {
+                    "title": "48-तासांची पुनरावलोकन चक्र",
+                    "description": "गंभीर अहवालांना प्राधान्य दिले जाते आणि 48 तासांत पुनरावलोकन केले जाते."
+                }
+            }
+        },
+        "wizard": {
+            "steps": {
+                "step1": {
+                    "title": "औषध तपशील",
+                    "description": "संदिग्ध उत्पादन ओळखा"
+                },
+                "step2": {
+                    "title": "फोटो पुरावे",
+                    "description": "पुराव्यांसाठी स्पष्ट फोटो अपलोड करा"
+                },
+                "step3": {
+                    "title": "स्थान आणि सबमिट",
+                    "description": "उत्पादन कोठे विकत घेतले होते?"
+                }
+            },
+            "step1": {
+                "medicineName": {
+                    "label": "औषधाचे नाव",
+                    "placeholder": "उदा: Augmentin 625 Duo"
+                },
+                "manufacturer": {
+                    "label": "निर्माते",
+                    "placeholder": "उदा: Cipla Ltd."
+                },
+                "description": {
+                    "label": "चिंतेचे वर्णन",
+                    "placeholder": "असामान्य रंग, गंध, textura, पॅकेजिंग किंवा नोंदवलेल्या दुष्परिणामांचे वर्णन करा…"
+                }
+            },
+            "step2": {
+                "uploadLabel": "औषधाचे फोटो अपलोड करा",
+                "uploadAnotherLabel": "दुसरे औषधाचे फोटो अपलोड करा",
+                "minImageRequired": "किमान 1 फोटो आवश्यक",
+                "removeAriaLabel": "काढा",
+                "confidence": "{percent}% विश्वास",
+                "analysis": {
+                    "likelyGenuine": "बहुदा खरे",
+                    "suspicious": "संदिग्ध",
+                    "likelyFake": "बहुदा बनावट",
+                    "unavailable": "विश्लेषण उपलब्ध नाही"
+                },
+                "analysisUnavailableDetails": "चित्र विश्लेषण पूर्ण करता आले नाही. तुमचा अहवाल अद्यापि सबमिट केला जाऊ शकतो."
+            },
+            "step3": {
+                "pharmacyName": {
+                    "label": "फार्मसी / दुकानाचे नाव",
+                    "placeholder": "उदा: Apollo Pharmacy, MG Road"
+                },
+                "address": {
+                    "label": "रस्त्याचा पत्ता",
+                    "placeholder": "उदा: 45, Park Street, Near Bus Stand"
+                },
+                "city": {
+                    "label": "शहर",
+                    "placeholder": "मुंबई"
+                },
+                "state": {
+                    "label": "राज्य",
+                    "placeholder": "महाराष्ट्र"
+                },
+                "pincode": {
+                    "label": "पिनकोड",
+                    "placeholder": "400001"
+                }
+            },
+            "success": {
+                "savedTitle": "अहवाल स्थानिक पातळीवर जतन केला",
+                "submittedTitle": "अहवाल सबमिट केला",
+                "offlineDescription": "नेटवर्क उपलब्ध नाही. तुमचा अहवाल या डिव्हाइसवर जतन केला गेला आहे आणि कनेक्शन सुधारल्यावर आपोआप सबमिट होईल.",
+                "onlineDescription": "तुमचा अहवाल सुरक्षितपणे प्राप्त झाला आहे आणि आमची फार्माकोविजिलन्स टीम 48 तासांत पुनरावलोकन करेल.",
+                "referenceIdLabel": "संदर्भ आयडी",
+                "submitAnother": "दुसरा अहवाल सबमिट करा"
+            },
+            "header": {
+                "badge": "मेडवॉच अहवाल",
+                "pendingSync": "{count} बाकी सिंक",
+                "receivedTitle": "अहवाल प्राप्त झाला"
+            },
+            "nav": {
+                "back": "मागे",
+                "continue": "सुरू ठेवा",
+                "submit": "अहवाल सबमिट करा",
+                "submitting": "सबमिट करत आहे…"
+            },
+            "toasts": {
+                "restoredDraft": "तुमचा जतन न केलेला अहवाल ड्राफ्ट पुनर्स्थापित केला गेला.",
+                "offlineSaved": "तुम्ही ऑफलाइन आहात. तुमचा अहवाल स्थानिक पातळीवर जतन केला गेला आहे आणि कनेक्शन सुधारल्यावर आपोआप सबमिट होईल.",
+                "networkSlowSaved": "नेटवर्क हळू आहे. तुमचा अहवाल स्थानिक पातळीवर जतन केला गेला आहे आणि कनेक्शन सुधारल्यावर आपोआप सबमिट होईल.",
+                "offlineQueueFailed": "तुम्ही ऑफलाइन आहात आणि अहवाल स्थानिक पातळीवर जतन केला जाऊ शकला नाही. कृपया पुन्हा प्रयत्न करा.",
+                "submissionFailedGeneric": "सबमिट अयशस्वी. कृपया तुमचे कनेक्शन तपासा आणि पुन्हा प्रयत्न करा."
+            },
+            "validation": {
+                "minChars": "किमान 2 अक्षरे आवश्यक",
+                "descriptionMin": "कृपया किमान 20 अक्षरे द्या",
+                "imagesRequired": "किमान 1 फोटो आवश्यक",
+                "required": "आवश्यक",
+                "pincodeInvalid": "वैध 6-अंकी भारतीय पिनकोड भरा (0 ने सुरू होऊ शकत नाही)"
+            }
+        }
+    },
     "Home": {
         "title": "तुमचे आरोग्य, पडताळलेले आणि सुरक्षित.",
         "subtitle": "भारताची ओपन-सोर्स नागरिक प्रणाली जी तुमचे औषधाची प्रमाणिकता त्वरित तपासू शकते, सुरक्षित औषधालय शोधू शकते आणि महत्त्वाची स्वास्थ्य सूचना मिळवू शकते.",
@@ -218,6 +351,33 @@
             "faq": "वारंवार विचारले जाणारे प्रश्न"
         },
         "footer": "SahiDawa विनामूल्य, ओपन-सोर्स आहे आणि 1.4 अब्ज भारतीयांसाठी बनवले आहे. जाहिराती नाहीत. प्रीमियम नाही. डेटा कधीही विकला जाणार नाही."
+    },
+    "Footer": {
+        "brandSubtitle": "भारतातील पहिले ओपन-सोर्स औषध पडताळणी प्लॅटफॉर्म. समुदाय-चालित पारदर्शकतेसह आपली औषधे स्कॅन करा, पडताळा आणि विश्वास ठेवा.",
+        "madeForGssoc": "GSSoC 2026 साठी बनवलेले",
+        "quickLinks": {
+            "title": "त्वरित लिंक्स",
+            "expiry_tracker": "एक्सपायरी ट्रॅकर",
+            "faq": "सतत विचारले जाणारे प्रश्न",
+            "about": "आमच्याबद्दल",
+            "privacy": "गोपनीयता धोरण",
+            "contact": "संपर्क"
+        },
+        "resources": {
+            "title": "संसाधने",
+            "github": "GitHub",
+            "contributing": "योगदान"
+        },
+        "connectWithUs": "आमच्याशी जोडा",
+        "social": {
+            "github": "GitHub",
+            "linkedin": "LinkedIn",
+            "twitter": "Twitter"
+        },
+        "contactEmail": "contact@sahidawa.in",
+        "copyright": "© 2026 SahiDawa. MIT परवान्याअंतर्गत ओपन सोर्स.",
+        "builtWith": "ओपन-सोर्स समुदायासाठी",
+        "builtWithSuffix": "सह तयार केले"
     },
     "about": {
         "badge": "GSSoC 2026 ओपन सोर्स प्रोजेक्ट",
@@ -952,5 +1112,30 @@
         "loading": "रेकॉर्ड लोड होत आहेत...",
         "noPrescriptions": "कोणतेही प्रिस्क्रिप्शन आढळले नाही.",
         "failedToLoad": "रेकॉर्ड लोड करण्यात अयशस्वी"
+    },
+    "errorBatchRequired": "Batch number is required.",
+    "errorExpiryRequired": "Expiry date is required.",
+    "errorExpiryInvalid": "Invalid date format.",
+    "errorExpiryPast": "Expiry date cannot be in the past.",
+    "Profile": {
+        "backToHome": "मुख्यपृष्ठावर परत जा",
+        "title": "तुमची प्रोफाइल",
+        "subtitle": "तुमचे खाते आणि औषध क्रियाकलाप व्यवस्थापित करा.",
+        "checkingStatus": "खात्याची स्थिती तपासली जात आहे",
+        "guestUser": "अतिथी वापरकर्ता",
+        "signedInUser": "साइन-इन वापरकर्ता",
+        "authenticatedAccount": "प्रमाणित खाते",
+        "readingSession": "तुमचे स्थानिक सत्र वाचले जात आहे",
+        "noAccountConnected": "कोणतेही खाते जोडलेले नाही",
+        "errorTitle": "प्रोफाइल लोड करण्यात अयशस्वी",
+        "errorDescription": "आम्ही तुमचे सत्र वाचू शकलो नाही. कृपया पुन्हा प्रयत्न करा किंवा साइन इन करा.",
+        "retry": "पुन्हा प्रयत्न करा",
+        "signIn": "साइन इन करा",
+        "signInRegister": "साइन इन / नोंदणी करा",
+        "signOut": "साइन आउट करा",
+        "abhaSetup": "ABHA सेटअप",
+        "abhaRecords": "ABHA नोंदी",
+        "notificationSettings": "सूचना सेटिंग्ज",
+        "privacySecurity": "गोपनीयता आणि सुरक्षा"
     }
 }

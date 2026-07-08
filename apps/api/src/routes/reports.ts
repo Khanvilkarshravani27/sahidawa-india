@@ -3,7 +3,7 @@ import { z } from "zod";
 import { supabase } from "../db/client";
 import { uuidSchema } from "../utils/validation";
 import { AuthenticatedRequest, optionalAuth, requireAuth, requireRole } from "../middleware/auth";
-import { reportLimiter } from "../middleware/rateLimit";
+import { reportLimiter, limiter } from "../middleware/rateLimit";
 import {
     validateReport,
     computeReportHash,
@@ -11,6 +11,7 @@ import {
 } from "../services/reportValidation.service";
 import { triggerRecallAlert } from "../services/notifications";
 import logger from "../utils/logger";
+import dns from "dns/promises";
 
 const reportsRouter = Router();
 const DEFAULT_ADMIN_REPORTS_LIMIT = 20;
@@ -30,22 +31,50 @@ const BLOCKED_IMAGE_URL_PATTERNS = [
     /^::1$/,
     /^fc00:/i,
     /^fe80:/i,
+    /^::ffff:/i,
 ];
 
-function isPublicImageUrl(rawUrl: string): boolean {
+import dns from "dns";
+
+const DNS_TIMEOUT_MS = parseInt(process.env.DNS_LOOKUP_TIMEOUT_MS ?? "3000", 10);
+
+async function isPublicImageUrl(rawUrl: string): Promise<boolean> {
     try {
         const { protocol, hostname } = new URL(rawUrl);
         if (protocol !== "https:" && protocol !== "http:") return false;
-        return !BLOCKED_IMAGE_URL_PATTERNS.some((p) => p.test(hostname));
+        const normalized = hostname.replace(/^\[|\]$/g, "");
+
+        if (BLOCKED_IMAGE_URL_PATTERNS.some((p) => p.test(normalized))) {
+            return false;
+        }
+
+        // Race DNS lookup against a hard timeout to prevent DoS via slow DNS
+        const dnsResult = (await Promise.race([
+            // Use the promises API to get a proper Promise-returning lookup
+            (dns.promises.lookup as any)(normalized),
+            new Promise<never>((_, reject) =>
+                setTimeout(() => reject(new Error("DNS lookup timeout")), DNS_TIMEOUT_MS)
+            ),
+        ])) as { address: string };
+
+        if (BLOCKED_IMAGE_URL_PATTERNS.some((p) => p.test(dnsResult.address))) {
+            return false;
+        }
+
+        return true;
     } catch {
+        // Treat DNS failures and timeouts as unsafe — block the URL
         return false;
     }
 }
 
-const safeImageUrl = z.string().url().refine(isPublicImageUrl, {
-    message:
-        "Image URL must use http(s) and must not point to a private, loopback, or link-local address",
-});
+const safeImageUrl = z
+    .string()
+    .url()
+    .refine(async (v) => await isPublicImageUrl(v), {
+        message:
+            "Image URL must use http(s) and must not point to a private, loopback, or link-local address",
+    });
 
 import { INDIAN_STATES_AND_DISTRICTS } from "../constants/administrativeMap";
 import { getBaseReportSchema } from "@sahidawa/validators";
@@ -101,7 +130,7 @@ reportsRouter.post(
     reportLimiter,
     optionalAuth,
     async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-        const parsed = createReportSchema.safeParse(req.body);
+        const parsed = await createReportSchema.safeParseAsync(req.body as unknown);
 
         if (!parsed.success) {
             res.status(400).json({
@@ -134,7 +163,8 @@ reportsRouter.post(
                 req.user?.id ?? null
             );
 
-            const { data: report, error } = await supabase
+            const reportHash = computeReportHash(validationPayload);
+            const { data: reports, error } = await supabase
                 .from("counterfeit_reports")
                 .upsert(
                     {
@@ -152,7 +182,7 @@ reportsRouter.post(
                         report_location: buildReportLocation(data.latitude, data.longitude),
                         reporter_id: req.user?.id ?? null,
                         ip_address: ipAddress,
-                        report_hash: computeReportHash(validationPayload),
+                        report_hash: reportHash,
                         risk_score: validation.riskScore,
                         is_escalated: !validation.passed,
                         duplicate_group_id: validation.duplicateGroupId ?? null,
@@ -164,12 +194,43 @@ reportsRouter.post(
                 )
                 .select(
                     "id, reported_brand_name, status, district, created_at, scanned_barcode, medicine_id"
-                )
-                .single();
+                );
 
             if (error) {
-                res.status(500).json({ error: "Failed to submit counterfeit report" });
+                res.status(500).json({
+                    error: "Failed to submit counterfeit report",
+                });
                 return;
+            }
+
+            let report = reports?.[0];
+
+            let statusCode = 201;
+            if (!report) {
+                const { data: existingReport, error: fetchError } = await supabase
+                    .from("counterfeit_reports")
+                    .select(
+                        "id, reported_brand_name, status, district, created_at, scanned_barcode, medicine_id"
+                    )
+                    .eq("report_hash", reportHash)
+                    .maybeSingle();
+
+                if (fetchError) {
+                    res.status(500).json({
+                        error: "Failed to fetch existing report",
+                    });
+                    return;
+                }
+
+                if (!existingReport) {
+                    res.status(500).json({
+                        error: "Existing report could not be retrieved",
+                    });
+                    return;
+                }
+
+                report = existingReport;
+                statusCode = 200;
             }
 
             const response: Record<string, unknown> = { report };
@@ -183,7 +244,7 @@ reportsRouter.post(
                 };
             }
 
-            res.status(201).json(response);
+            res.status(statusCode).json(response);
         } catch (err) {
             next(err);
         }
@@ -271,6 +332,7 @@ reportsRouter.get("/", requireAuth, requireRole("admin"), async (req, res: Respo
         let query = supabase
             .from("counterfeit_reports")
             .select("*")
+            .or(`snoozed_until.is.null,snoozed_until.lte.${new Date().toISOString()}`)
             .order("created_at", { ascending: false })
             .limit(limit + 1);
 
@@ -317,13 +379,22 @@ reportsRouter.patch(
             return;
         }
 
-        const { status } = req.body as { status?: string };
-        const allowedStatuses = ["pending", "verified_fake", "false_alarm"];
+        const updateReportStatusSchema = z
+            .object({
+                status: z.enum(["pending", "verified_fake", "false_alarm"]),
+            })
+            .strict();
 
-        if (!status || !allowedStatuses.includes(status)) {
-            res.status(400).json({ error: "Invalid report status" });
+        const parsedBody = updateReportStatusSchema.safeParse(req.body);
+        if (!parsedBody.success) {
+            res.status(400).json({
+                error: "Invalid report status or unknown fields",
+                details: parsedBody.error,
+            });
             return;
         }
+
+        const { status } = parsedBody.data;
 
         try {
             // Verify the report exists before updating. Without this check a
@@ -334,7 +405,7 @@ reportsRouter.patch(
                 .from("counterfeit_reports")
                 .select("id")
                 .eq("id", req.params.id)
-                .single();
+                .maybeSingle();
 
             if (fetchError || !existing) {
                 res.status(404).json({ error: "Report not found" });
@@ -368,8 +439,10 @@ reportsRouter.patch(
                     .from("counterfeit_reports")
                     .select("*", { count: "exact", head: true })
                     .eq("district", data.district)
+                    .eq("reported_brand_name", data.reported_brand_name)
                     .eq("status", "verified_fake")
-                    .eq("is_escalated", false);
+                    .eq("is_escalated", false)
+                    .or(`snoozed_until.is.null,snoozed_until.lte.${new Date().toISOString()}`);
 
                 if (count && count >= 5) {
                     const alertLevel = count >= 15 ? "high" : "medium";
@@ -442,6 +515,50 @@ reportsRouter.patch(
             console.error("Unexpected error in PATCH /api/reports/:id/status:", err);
             res.status(500).json({ error: "An unexpected error occurred" });
         }
+    }
+);
+
+/**
+ * PATCH /api/reports/:id/snooze
+ * Snoozes a report for a given number of days.
+ */
+reportsRouter.patch(
+    "/:id/snooze",
+    limiter,
+    requireAuth,
+    requireRole("admin", "moderator"),
+    async (req, res: Response) => {
+        const parsedId = uuidSchema.safeParse(req.params.id);
+        if (!parsedId.success) {
+            res.status(400).json({ error: "Invalid UUID format" });
+            return;
+        }
+
+        const snoozeSchema = z.object({
+            days: z.number().min(1).max(365).default(7),
+        });
+
+        const parsedBody = snoozeSchema.safeParse(req.body);
+        if (!parsedBody.success) {
+            res.status(400).json({ error: "Invalid snooze payload", details: parsedBody.error });
+            return;
+        }
+
+        const snoozedUntil = new Date();
+        snoozedUntil.setDate(snoozedUntil.getDate() + parsedBody.data.days);
+
+        const { error } = await supabase
+            .from("counterfeit_reports")
+            .update({ snoozed_until: snoozedUntil.toISOString() })
+            .eq("id", req.params.id);
+
+        if (error) {
+            logger.error("Failed to snooze report", { error, id: req.params.id });
+            res.status(500).json({ error: "Failed to snooze report" });
+            return;
+        }
+
+        res.json({ success: true, snoozed_until: snoozedUntil.toISOString() });
     }
 );
 

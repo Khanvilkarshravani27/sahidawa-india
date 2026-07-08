@@ -1,4 +1,137 @@
 {
+    "Report": {
+        "pageHeader": {
+            "title": "واقعيءَ جي رپورٽ ڪريو",
+            "subtitle": "عام تحفظ جي مہم"
+        },
+        "hero": {
+            "badge": "سركاري نگراني",
+            "titleLine1": "شڪدار",
+            "titleLine2": "دوا جي رپورٽ ڪريو",
+            "description": "توهان جي خبرداري عوامي صحت جي حفاظت ڪري ٿي. جعلي، مئياد ختم ٿي چڪا يا گهٽ معيار جي دوائن جي رپورٽ ڪريو. ساري رپورٽون ڀارت جي فارماكوويجلينس اختيارن پاران تفتیش ٿينديون."
+        },
+        "infoPanel": {
+            "quickVerify": {
+                "title": "فوري چڪاس",
+                "subtitle": "چڪاسيو ته اهو اڳي ئي رپورٽ ڪيو ويو آهي يا نه",
+                "placeholder": "بيچ نمبر داخل ڪريو..."
+            },
+            "trustSafety": {
+                "title": "اعتماد ۽ حفاظت",
+                "anonymity": {
+                    "title": "گمنامي جي گارنٽي",
+                    "description": "توهان جي ذاتي معلومات ڳجھي طور تي محفوظ آهي ۽ ڪڏهن به عوامي طور تي شيئر نه ڪئي ويندي."
+                },
+                "verified": {
+                    "title": "فارماكوويجلينس پاران تصديق ٿيل",
+                    "description": "الرٽ جاري ڪرڻ کان اڳ رپورٽون سرکاری ڊيٽابيسن سان چڪاسيل آهن."
+                },
+                "reviewCycle": {
+                    "title": "48-ڪلاڪ جي Review چر",
+                    "description": "مهم رپورٽن کي ترجيح ڏني ويندي آهي ۽ 48 ڪلاڪ اندر تفتیش ڪئي ويندي آهي."
+                }
+            }
+        },
+        "wizard": {
+            "steps": {
+                "step1": {
+                    "title": "دوا جي تفصيل",
+                    "description": "شڪدار پيداوار سڃاڻو"
+                },
+                "step2": {
+                    "title": "فوٹو ثبوت",
+                    "description": "ثبوت جي طور تي واضح فوٽوز اپلوڊ ڪريو"
+                },
+                "step3": {
+                    "title": "مقام ۽ جمع",
+                    "description": "پيداوار ڪٿي خريديو ويو هو؟"
+                }
+            },
+            "step1": {
+                "medicineName": {
+                    "label": "دوا جو نالو",
+                    "placeholder": "مثال: Augmentin 625 Duo"
+                },
+                "manufacturer": {
+                    "label": "نڪتور",
+                    "placeholder": "مثال: Cipla Ltd."
+                },
+                "description": {
+                    "label": "تشويش جي تفصيل",
+                    "placeholder": "غير معمولي رنگ، بوي، ساخت، پيڪيجنگ، يا رپورٽ جي وئي واري ضمني اثرن جو بيان ڪريو…"
+                }
+            },
+            "step2": {
+                "uploadLabel": "دوا جي فوٽو اپلوڊ ڪريو",
+                "uploadAnotherLabel": "ٻي دوا جي فوٽو اپلوڊ ڪريو",
+                "minImageRequired": "گنيهن 1 فوٽو گهربل آهي",
+                "removeAriaLabel": "هٽايو",
+                "confidence": "{percent}% اعتماد",
+                "analysis": {
+                    "likelyGenuine": "شايَد اصل",
+                    "suspicious": "شڪدار",
+                    "likelyFake": "شايَد جعلي",
+                    "unavailable": "تحليل دستياب ناهي"
+                },
+                "analysisUnavailableDetails": "تصويري تحليل مکمل نه ڪري سگهيو ويو۔ توهان جي رپورٽ اڃان به جمع ٿي سگهي ٿي."
+            },
+            "step3": {
+                "pharmacyName": {
+                    "label": "فارميسي / دڪان جو نالو",
+                    "placeholder": "مثال: Apollo Pharmacy, MG Road"
+                },
+                "address": {
+                    "label": "گلي جو پتو",
+                    "placeholder": "مثال: 45, Park Street, Near Bus Stand"
+                },
+                "city": {
+                    "label": "شهر",
+                    "placeholder": "ممبئي"
+                },
+                "state": {
+                    "label": "رياست",
+                    "placeholder": "مهاراشٽر"
+                },
+                "pincode": {
+                    "label": "پن ڪوڊ",
+                    "placeholder": "400001"
+                }
+            },
+            "success": {
+                "savedTitle": "رپورٽ مقامي طور محفوظ ڪئي وئي",
+                "submittedTitle": "رپورٽ جمع ڪئي وئي",
+                "offlineDescription": "نيٽ ورڪ دستياب ناهي. توھان جي رپورٽ هن ڊوائس تي محفوظ ڪئي وئي آهي ۽ ڪنيڪشن بهتر ٿي ته self-submit ٿي ويندي.",
+                "onlineDescription": "توهان جي رپورٽ محفوظ طريقي سان موصول ٿي آهي ۽ اسان جي فارماكوويجلينس ٽيم 48 ڪلاڪ اندر تفتیش ڪندو.",
+                "referenceIdLabel": "حوالہ ID",
+                "submitAnother": "ٻيو رپورٽ جمع ڪريو"
+            },
+            "header": {
+                "badge": "ميڊواچ رپورٽ",
+                "pendingSync": "{count} باقي سنڪ",
+                "receivedTitle": "رپورٽ موصول ٿي"
+            },
+            "nav": {
+                "back": "واپس",
+                "continue": "جاري رکو",
+                "submit": "رپورٽ جمع ڪريو",
+                "submitting": "جمع ٿي رهيو آهي…"
+            },
+            "toasts": {
+                "restoredDraft": "توهان جي غير محفوظ ٿيل رپورٽ ڈرافٽ بحال ڪيو ويو آهي.",
+                "offlineSaved": "توهان آف لائن آهيو. توھان جي رپورٽ مقامي طور محفوظ ڪئي وئي آهي ۽ ڪنيڪشن بهتر ٿي ته self-submit ٿي ويندي.",
+                "networkSlowSaved": "نيٽ ورڪ سست آهي. توھان جي رپورٽ مقامي طور محفوظ ڪئي وئي آهي ۽ ڪنيڪشن بهتر ٿي ته self-submit ٿي ويندي.",
+                "offlineQueueFailed": "توهان آف لائن آهيو ۽ رپورٽ مقامي طور محفوظ نه ڪئي وئي. مھرباني ڪري ٻيھر ڪوشش ڪريو.",
+                "submissionFailedGeneric": "جمع ٿيڻ فشل ٿيو. مھرباني ڪري پنهنجو ڪنيڪشن چيڪ ڪريو ۽ ٻيھر ڪوشش ڪريو."
+            },
+            "validation": {
+                "minChars": "گهربل 2 حرف يا وڌيڪ",
+                "descriptionMin": "مھرباني ڪري گھٽ ۾ گھٽ 20 حرف فراهم ڪريو",
+                "imagesRequired": "گهربل 1 فوٽو يا وڌيڪ",
+                "required": "گهربل",
+                "pincodeInvalid": "معتبر 6-انگ هندي پن ڪوڊ داخل ڪريو (0 سان شروع نه ٿي سگھي)"
+            }
+        }
+    },
     "Home": {
         "title": "توهان جي صحت، تصديق ٿيل ۽ محفوظ.",
         "subtitle": "ڀارت جو اوپن سورس شهري پليٽفارم، جيڪو دوائن جي اصليت جي فوري تصديق، محفوظ فارميسي ڳولڻ، ۽ اهم صحت وارن اطلاعن جي سهولت فراهم ڪري ٿو.",
@@ -259,6 +392,33 @@
             "faq": "اڪثر پڇيا ويندڙ سوال"
         },
         "footer": "SahiDawa مفت، اوپن سورس ۽ 1.4 ارب هندستانين لاءِ ٺاهيو ويو آهي. نه اشتهار. نه پريميئم. نه ئي ڊيٽا وڪرو ٿيندي. ڪڏهن به نه."
+    },
+    "Footer": {
+        "brandSubtitle": "ڀارت جو پهريون اوپن سورس دوا جي تصديق جو پليٽ فارم. پنهنجي دوائن کي اسڪين, تصديق ۽ اعتماد ڪريو.",
+        "madeForGssoc": "GSSoC 2026 لاءِ ٺهيل",
+        "quickLinks": {
+            "title": "جلدي لنڪس",
+            "expiry_tracker": "ايڪسپائري ٽريڪر",
+            "faq": "سوال جواب (FAQ)",
+            "about": "اسան بابت",
+            "privacy": "رازداري واري پاليسي",
+            "contact": "رابطو"
+        },
+        "resources": {
+            "title": "وسيلا",
+            "github": "GitHub",
+            "contributing": "حصو وٺڻ"
+        },
+        "connectWithUs": "اسان سان جوڙيو",
+        "social": {
+            "github": "GitHub",
+            "linkedin": "LinkedIn",
+            "twitter": "Twitter"
+        },
+        "contactEmail": "contact@sahidawa.in",
+        "copyright": "© 2026 SahiDawa. MIT لائسنس تحت اوپن سورس.",
+        "builtWith": "اوپن سورس ڪميونيٽي لاءِ",
+        "builtWithSuffix": "سان ٺهيل"
     },
     "about": {
         "badge": "GSSoC 2026 اوپن سورس پروجيڪٽ",
@@ -1093,5 +1253,30 @@
         "loading": "رڪارڊ لوڊ ٿي رهيا آهن...",
         "noPrescriptions": "ڪو به نسخو نه مليو.",
         "failedToLoad": "رڪارڊ لوڊ ڪرڻ ۾ ناڪام"
+    },
+    "errorBatchRequired": "Batch number is required.",
+    "errorExpiryRequired": "Expiry date is required.",
+    "errorExpiryInvalid": "Invalid date format.",
+    "errorExpiryPast": "Expiry date cannot be in the past.",
+    "Profile": {
+        "backToHome": "گھر ڏانهن واپس وڃو",
+        "title": "توهان جو پروفائيل",
+        "subtitle": "پنهنجي اڪائونٽ ۽ دوا جي سرگرمي کي منظم ڪريو.",
+        "checkingStatus": "اڪائونٽ جي حيثيت جانچي پئي وڃي",
+        "guestUser": "مهمان استعمال ڪندڙ",
+        "signedInUser": "سائن ان استعمال ڪندڙ",
+        "authenticatedAccount": "تصديق ٿيل اڪائونٽ",
+        "readingSession": "توهان جو مقامي سيشن پڙهيو پيو وڃي",
+        "noAccountConnected": "ڪوبه اڪائونٽ ڳنڍيل ناهي",
+        "errorTitle": "پروفائيل لوڊ ڪرڻ ۾ ناڪامي",
+        "errorDescription": "اسان توهان جو سيشن پڙهي نه سگهياسين. مهرباني ڪري ٻيهر ڪوشش ڪريو يا سائن ان ڪريو.",
+        "retry": "ٻيهر ڪوشش ڪريو",
+        "signIn": "سائن ان ڪريو",
+        "signInRegister": "سائن ان / رجسٽر ڪريو",
+        "signOut": "سائن آئوٽ ڪريو",
+        "abhaSetup": "ABHA سيٽ اپ",
+        "abhaRecords": "ABHA رڪارڊ",
+        "notificationSettings": "اطلاعي سيٽنگون",
+        "privacySecurity": "رازداري ۽ سلامتي"
     }
 }
