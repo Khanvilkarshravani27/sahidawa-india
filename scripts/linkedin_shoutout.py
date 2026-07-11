@@ -420,18 +420,12 @@ def generate_comic_prompt_with_gemini(pr: dict, api_key: str) -> str:
         "2. Characters: Create two stickmen representing concepts in the PR (e.g., 'Main Thread' vs 'Web Worker', 'Frontend' vs 'Database', 'Dev' vs 'Bug', 'Old API' vs 'New Cache'). Label them clearly.\n"
         "3. Action: Show a funny interaction metaphor for the PR. For example, one struggling with heavy boxes while the other helps, or one throwing something away.\n"
         "4. Speech Bubbles: Include short, witty developer humor in speech bubbles.\n"
-        "5. PR Card: The prompt MUST instruct the image generator to draw a GitHub PR card at the bottom containing exactly:\n"
-        f"   - {pr.get('repo', 'RatLoopz/sahidawa-india')}\n"
-        f"   - PR #{pr.get('number', '???')}\n"
-        f"   - Title: {pr.get('title', 'Unknown')}\n"
-        f"   - @{pr.get('author', 'contributor')}\n"
-        f"   - +{pr.get('additions', '?')} additions, −{pr.get('deletions', '?')} deletions, {pr.get('files_count', '?')} files\n"
-        "   - An arrow pointing to the contributor avatar saying 'this guy cooked 👨‍🍳'.\n"
+        "5. Composition: DO NOT INCLUDE ANY TEXT, LABELS, OR PR CARDS. Leave the center of the image relatively empty or uncluttered, because a real GitHub PR card will be pasted directly in the middle later.\n"
         "6. Format: Do NOT use markdown code blocks. Output ONLY the raw image generation prompt string."
     )
     user_prompt = f"PR Title: {pr.get('title', '')}\nPR Body: {pr.get('body', '')[:500]}\nGenerate the detailed image prompt."
     
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key={api_key}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
     payload = {
         "systemInstruction": {"parts": [{"text": system_prompt}]},
         "contents": [{"parts": [{"text": user_prompt}]}],
@@ -450,17 +444,10 @@ def generate_comic_prompt_with_gemini(pr: dict, api_key: str) -> str:
         print(f"⚠️ Dynamic prompt generation failed: {e}")
     
     # Generic fallback prompt
-    return f"""A clean, minimal, professional LinkedIn engineering micro-comic on a whiteboard background.
-Two simple stickmen developers interacting. One is struggling with heavy technical debt, the other provides a solution.
-Include speech bubbles with developer humor.
-At the bottom, draw a GitHub PR card exactly like this:
-RatLoopz/sahidawa-india
-PR #{pr.get('number', '???')}
-{pr.get('title', 'Unknown')}
-@{pr.get('author', 'contributor')}
-+{pr.get('additions', '?')} additions, −{pr.get('deletions', '?')} deletions
-Draw an arrow pointing to the contributor's avatar that says "this guy cooked 👨‍🍳".
-"""
+    return """A beautiful, vibrant 3D illustration of a modern developer's workspace.
+A glowing laptop screen, coffee cup, and neat plant on a wooden desk.
+Warm, inviting colors with high quality lighting.
+LEAVE THE EXACT CENTER OF THE IMAGE EMPTY and uncluttered, as a card will be placed there. Do not include any text."""
 
 def generate_and_upload_image(pr: dict, access_token: str, org_urn: str) -> str | None:
     """
@@ -479,6 +466,8 @@ def generate_and_upload_image(pr: dict, access_token: str, org_urn: str) -> str 
         import urllib.parse
         import random
         import requests
+        from PIL import Image, ImageDraw, ImageFilter
+        import io
         
         encoded_prompt = urllib.parse.quote(prompt)
         # Using Pollinations API (Flux model) - Free, no auth required
@@ -489,14 +478,36 @@ def generate_and_upload_image(pr: dict, access_token: str, org_urn: str) -> str 
         img_resp = requests.get(image_url, timeout=60)
         img_resp.raise_for_status()
         
-        with open(comic_path, "wb") as f:
-            f.write(img_resp.content)
-            
-        print("✅ Pollinations API generated comic successfully.")
+        bg_img = Image.open(io.BytesIO(img_resp.content)).convert("RGBA")
+        print("✅ Pollinations API generated background successfully.")
+        
+        print("📥 Fetching real GitHub PR Image to composite...")
+        repo = os.environ.get('GITHUB_REPOSITORY', 'RatLoopz/sahidawa-india')
+        pr_number = pr.get('number')
+        og_url = f"https://opengraph.githubassets.com/1/{repo}/pull/{pr_number}"
+        
+        og_resp = requests.get(og_url, timeout=30)
+        og_resp.raise_for_status()
+        
+        pr_img = Image.open(io.BytesIO(og_resp.content)).convert("RGBA")
+        # Crop the center part containing the useful text (Title and Stats)
+        # Full is 1200x600. Title is roughly in the center block.
+        pr_cropped = pr_img.crop((70, 70, 1130, 480))
+        
+        # Add a subtle drop shadow or rounded corner effect if desired (optional)
+        # For simplicity, we just paste it cleanly in the center
+        bg_w, bg_h = bg_img.size
+        pr_w, pr_h = pr_cropped.size
+        offset = ((bg_w - pr_w) // 2, (bg_h - pr_h) // 2)
+        
+        bg_img.paste(pr_cropped, offset, pr_cropped)
+        bg_img.convert('RGB').save(comic_path, format="PNG")
+        
+        print("✅ Successfully composited AI background and Real PR Card.")
             
     except Exception as e:
-        print(f"⚠️ AI Image generation failed: {e}")
-        print("↩️ Falling back to GitHub PR OpenGraph image...")
+        print(f"⚠️ AI Compositing failed: {e}")
+        print("↩️ Falling back to ONLY GitHub PR OpenGraph image...")
         try:
             repo = os.environ.get('GITHUB_REPOSITORY', 'RatLoopz/sahidawa-india')
             pr_number = pr.get('number')
