@@ -22,13 +22,6 @@ jest.mock("../src/services/medicineRag.service", () => {
 
 import triageRouter from "../src/routes/triage";
 
-function buildApp() {
-    const app = express();
-    app.use(express.json());
-    app.use("/api/triage", triageRouter);
-    return app;
-}
-
 const validMedicine = {
     id: "m-1",
     brand_name: "Crocin",
@@ -49,7 +42,12 @@ const malformedMedicine = { ...validMedicine } as Record<string, unknown>;
 delete malformedMedicine.generic_name;
 
 describe("triage routes response validation", () => {
-    const app = buildApp();
+    let app: express.Express;
+    beforeAll(() => {
+        app = express();
+        app.use(express.json());
+        app.use("/api/triage", triageRouter);
+    });
 
     beforeEach(() => {
         jest.clearAllMocks();
