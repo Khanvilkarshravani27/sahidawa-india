@@ -12,12 +12,14 @@ const mockSupabase = {
 const mockRedis = {
     isOpen: true,
     get: jest.fn(),
-    set: jest.fn(),
-    del: jest.fn(),
-    incr: jest.fn(),
-    connect: jest.fn(),
-    zIncrBy: jest.fn(),
+    set: jest.fn().mockResolvedValue("OK"),
+    del: jest.fn().mockResolvedValue(1),
+    incr: jest.fn().mockResolvedValue(1),
+    zIncrBy: jest.fn().mockResolvedValue(1),
     zRangeWithScores: jest.fn(),
+    expire: jest.fn().mockResolvedValue(true),
+    connect: jest.fn().mockResolvedValue(true),
+    on: jest.fn(),
 };
 
 jest.mock("../src/db/client", () => ({
@@ -254,14 +256,17 @@ describe("Redis Caching and Drug Lookup Services", () => {
 
     describe("getCacheStats", () => {
         it("should return correct cache statistics from Redis", async () => {
-            mockRedis.get
-                .mockResolvedValueOnce("80") // stats:hits
-                .mockResolvedValueOnce("20") // stats:misses
-                .mockResolvedValueOnce("40") // stats:tier:hot
-                .mockResolvedValueOnce("30") // stats:tier:warm
-                .mockResolvedValueOnce("10"); // stats:tier:cold
+            mockRedis.get.mockImplementation(async (key) => {
+                if (key === "stats:snapshot:last_known") return null;
+                if (key === "stats:hits") return "80";
+                if (key === "stats:misses") return "20";
+                if (key === "stats:tier:hot") return "40";
+                if (key === "stats:tier:warm") return "30";
+                if (key === "stats:tier:cold") return "10";
+                return null;
+            });
 
-            mockRedis.zRangeWithScores.mockResolvedValueOnce([
+            mockRedis.zRangeWithScores.mockImplementation(async () => [
                 { value: "Paracetamol", score: 50 },
                 { value: "Crocin", score: 30 },
             ]);
