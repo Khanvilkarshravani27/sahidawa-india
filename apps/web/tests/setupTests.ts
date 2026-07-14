@@ -4,8 +4,11 @@
 // Helpful matchers
 import "fake-indexeddb/auto";
 import "@testing-library/jest-dom";
-import { cleanup } from "@testing-library/react";
+import { cleanup, configure } from "@testing-library/react";
 import { afterEach, afterAll } from "@jest/globals";
+
+// Increase default waitFor timeout to reduce flakiness in CI
+configure({ asyncUtilTimeout: 5000 });
 
 // Ensure cleanup is explicitly called after each test
 afterEach(() => {

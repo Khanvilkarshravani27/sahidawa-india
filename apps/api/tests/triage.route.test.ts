@@ -22,13 +22,6 @@ jest.mock("../src/services/medicineRag.service", () => {
 
 import triageRouter from "../src/routes/triage";
 
-function buildApp() {
-    const app = express();
-    app.use(express.json());
-    app.use("/api/triage", triageRouter);
-    return app;
-}
-
 const validMedicine = {
     id: "m-1",
     brand_name: "Crocin",
@@ -50,15 +43,23 @@ delete malformedMedicine.generic_name;
 
 describe("triage routes response validation", () => {
     let app: express.Express;
-    let server: ReturnType<typeof express> extends { listen: (...args: any[]) => infer R }
-        ? R
-        : any;
+    let server: any;
 
-    beforeAll(() => {
-        app = buildApp();
+    beforeAll((done) => {
+        app = express();
+        app.use(express.json());
+        app.use("/api/triage", triageRouter);
+        server = app.listen(0, done);
     });
 
-    afterAll(() => {});
+    afterAll((done) => {
+        if (server) {
+            if (server.closeAllConnections) server.closeAllConnections();
+            server.close(done);
+        } else {
+            done();
+        }
+    });
 
     beforeEach(() => {
         jest.clearAllMocks();
@@ -68,7 +69,7 @@ describe("triage routes response validation", () => {
         it("returns 200 and passes a well-formed response through unchanged", async () => {
             mockRetrieve.mockResolvedValue([validMedicine]);
 
-            const res = await request(app)
+            const res = await request(server)
                 .post("/api/triage/medicine-query")
                 .send({ query: "fever" });
 
@@ -81,7 +82,7 @@ describe("triage routes response validation", () => {
         it("returns 502 when the RAG service yields a malformed medicine", async () => {
             mockRetrieve.mockResolvedValue([malformedMedicine]);
 
-            const res = await request(app)
+            const res = await request(server)
                 .post("/api/triage/medicine-query")
                 .send({ query: "fever" });
 
@@ -92,7 +93,7 @@ describe("triage routes response validation", () => {
         });
 
         it("returns 400 on an invalid request body (real Zod schema still runs)", async () => {
-            const res = await request(app).post("/api/triage/medicine-query").send({});
+            const res = await request(server).post("/api/triage/medicine-query").send({});
 
             expect(res.status).toBe(400);
             expect(mockRetrieve).not.toHaveBeenCalled();
@@ -103,7 +104,7 @@ describe("triage routes response validation", () => {
         it("returns 200 with a valid response and no coordinates", async () => {
             mockRetrieve.mockResolvedValue([validMedicine]);
 
-            const res = await request(app)
+            const res = await request(server)
                 .post("/api/triage/recommend")
                 .send({ symptoms: "mild fever and headache" });
 
@@ -116,7 +117,7 @@ describe("triage routes response validation", () => {
         it("flags an emergency for urgent symptoms", async () => {
             mockRetrieve.mockResolvedValue([validMedicine]);
 
-            const res = await request(app)
+            const res = await request(server)
                 .post("/api/triage/recommend")
                 .send({ symptoms: "chest pain since morning" });
 
@@ -128,7 +129,7 @@ describe("triage routes response validation", () => {
         it("returns 502 when the RAG service yields a malformed medicine", async () => {
             mockRetrieve.mockResolvedValue([malformedMedicine]);
 
-            const res = await request(app)
+            const res = await request(server)
                 .post("/api/triage/recommend")
                 .send({ symptoms: "mild fever and headache" });
 
@@ -139,7 +140,7 @@ describe("triage routes response validation", () => {
         });
 
         it("returns 400 on an invalid request body", async () => {
-            const res = await request(app).post("/api/triage/recommend").send({});
+            const res = await request(server).post("/api/triage/recommend").send({});
 
             expect(res.status).toBe(400);
             expect(mockRetrieve).not.toHaveBeenCalled();

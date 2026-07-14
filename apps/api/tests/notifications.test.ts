@@ -108,18 +108,24 @@ import { computeTwilioSignature } from "../src/middleware/twilioSignature";
 
 describe("notifications routes", () => {
     let app: express.Express;
-    let server: ReturnType<typeof express> extends { listen: (...args: any[]) => infer R }
-        ? R
-        : any;
+    let server: any;
 
-    beforeAll(() => {
+    beforeAll((done) => {
         app = express();
         app.use(express.json());
         app.use(express.urlencoded({ extended: true }));
         app.use("/api/notifications", notificationsRouter);
+        server = app.listen(0, done);
     });
 
-    afterAll(() => {});
+    afterAll((done) => {
+        if (server) {
+            if (server.closeAllConnections) server.closeAllConnections();
+            server.close(done);
+        } else {
+            done();
+        }
+    });
 
     beforeEach(() => {
         jest.clearAllMocks();
@@ -132,23 +138,23 @@ describe("notifications routes", () => {
     });
 
     it("returns vapid public key payload", async () => {
-        const response = await request(app).get("/api/notifications/vapid-public-key");
+        const response = await request(server).get("/api/notifications/vapid-public-key");
         expect(response.status).toBe(200);
     });
 
     it("returns Cache-Control header for vapid public key", async () => {
-        const response = await request(app).get("/api/notifications/vapid-public-key");
+        const response = await request(server).get("/api/notifications/vapid-public-key");
         expect(response.headers["cache-control"]).toContain("public");
     });
 
     it("returns mock recall feed", async () => {
-        const response = await request(app).get("/api/notifications/recalls/mock");
+        const response = await request(server).get("/api/notifications/recalls/mock");
         expect(response.status).toBe(200);
         expect(response.body).toHaveProperty("recalls");
     });
 
     it("fetches subscription status successfully", async () => {
-        const response = await request(app)
+        const response = await request(server)
             .get("/api/notifications/status")
             .query({ phone: "9876543210" });
 
@@ -165,7 +171,7 @@ describe("notifications routes", () => {
             district: "West Delhi",
         };
 
-        const response = await request(app).post("/api/notifications/register").send(payload);
+        const response = await request(server).post("/api/notifications/register").send(payload);
 
         expect(response.status).toBe(201);
         expect(response.body.success).toBe(true);
@@ -179,7 +185,7 @@ describe("notifications routes", () => {
             district: "",
         };
 
-        const response = await request(app).post("/api/notifications/register").send(payload);
+        const response = await request(server).post("/api/notifications/register").send(payload);
 
         expect(response.status).toBe(400);
     });
@@ -191,7 +197,7 @@ describe("notifications routes", () => {
             channels: ["whatsapp"],
         };
 
-        const response = await request(app).patch("/api/notifications/phone").send(payload);
+        const response = await request(server).patch("/api/notifications/phone").send(payload);
 
         expect(response.status).toBe(200);
         expect(response.body.success).toBe(true);
@@ -206,7 +212,7 @@ describe("notifications routes", () => {
     it("returns 401 for unauthenticated subscriber updates without updating by phone", async () => {
         mockAuthenticatedUser = null;
 
-        const response = await request(app).patch("/api/notifications/phone").send({
+        const response = await request(server).patch("/api/notifications/phone").send({
             phone: "9876543210",
             district: "South Delhi",
         });
@@ -225,7 +231,7 @@ describe("notifications routes", () => {
         };
         mockQueryResult = [];
 
-        const response = await request(app)
+        const response = await request(server)
             .patch("/api/notifications/phone")
             .send({
                 phone: "9876543210",
@@ -239,7 +245,7 @@ describe("notifications routes", () => {
     });
 
     it("keeps PATCH /phone updates partial", async () => {
-        const response = await request(app).patch("/api/notifications/phone").send({
+        const response = await request(server).patch("/api/notifications/phone").send({
             phone: "9876543210",
             language: "hi",
         });
@@ -253,7 +259,7 @@ describe("notifications routes", () => {
             phone: "9876543210",
         };
 
-        const response = await request(app).delete("/api/notifications/phone").send(payload);
+        const response = await request(server).delete("/api/notifications/phone").send(payload);
 
         expect(response.status).toBe(200);
         expect(response.body.success).toBe(true);
@@ -267,7 +273,7 @@ describe("notifications routes", () => {
             params
         );
 
-        const response = await request(app)
+        const response = await request(server)
             .post("/api/notifications/twilio-webhook")
             .type("form")
             .set("X-Twilio-Signature", signature)
@@ -285,7 +291,7 @@ describe("notifications routes", () => {
             message: "Test Message details",
         };
 
-        const response = await request(app).post("/api/notifications/broadcast").send(payload);
+        const response = await request(server).post("/api/notifications/broadcast").send(payload);
 
         expect(response.status).toBe(200);
         expect(response.body.success).toBe(true);
@@ -298,13 +304,13 @@ describe("notifications routes", () => {
             district: "West Delhi",
             language: "en",
         };
-        const response = await request(app).post("/api/notifications/register").send(payload);
+        const response = await request(server).post("/api/notifications/register").send(payload);
         expect(response.status).toBe(400);
         expect(response.body.error).toBe("Invalid phone number format");
     });
 
     it("returns 400 for /status with invalid phone number format", async () => {
-        const response = await request(app)
+        const response = await request(server)
             .get("/api/notifications/status")
             .query({ phone: "invalid-phone" });
         expect(response.status).toBe(400);
@@ -325,7 +331,7 @@ describe("notifications routes", () => {
             channels: ["whatsapp"],
         };
 
-        const response = await request(app).patch("/api/notifications/phone").send(payload2);
+        const response = await request(server).patch("/api/notifications/phone").send(payload2);
         expect(response.status).toBe(400);
         expect(response.body.error).toBe("Invalid phone number format");
     });
@@ -334,7 +340,7 @@ describe("notifications routes", () => {
         const payload = {
             phone: "garbagephn",
         };
-        const response = await request(app).delete("/api/notifications/phone").send(payload);
+        const response = await request(server).delete("/api/notifications/phone").send(payload);
         expect(response.status).toBe(400);
         expect(response.body.error).toBe("Invalid phone number format");
     });
