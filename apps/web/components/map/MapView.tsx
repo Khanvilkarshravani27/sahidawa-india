@@ -51,6 +51,7 @@ export default function MapView() {
     const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
     const [pharmacies, setPharmacies] = useState<Pharmacy[]>([]);
     const [ashaWorkers, setAshaWorkers] = useState<AshaWorker[]>([]);
+    const [clusters, setClusters] = useState<GeohashCluster[]>([]);
     const [showPharmacies, setShowPharmacies] = useState(true);
     const [showAsha, setShowAsha] = useState(true);
     const [loading, setLoading] = useState(true);
