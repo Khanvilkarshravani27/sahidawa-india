@@ -12,7 +12,6 @@ const router = Router();
 router.use(scheduleLimiter);
 const SUMMARY_CACHE_BUCKET_MINUTES = 5;
 const SUMMARY_CACHE_TTL_SECONDS = SUMMARY_CACHE_BUCKET_MINUTES * 60;
-const DOSE_LOG_PAGE_SIZE = 500;
 
 const invalidateUserSummaryCaches = async (userId: string) => {
     if (!redisClient.isOpen) return;
@@ -476,39 +475,52 @@ router.get("/:id/stats", requireAuth, async (req: AuthenticatedRequest, res: Res
             return;
         }
 
-        const dayCount = Math.round((toDate.getTime() - fromDate.getTime()) / 86400000) + 1;
+        const requestedDayCount =
+            Math.round((toDate.getTime() - fromDate.getTime()) / 86400000) + 1;
 
-        if (dayCount > 365) {
+        if (requestedDayCount > 365) {
             res.status(400).json({ error: "Date range cannot exceed 365 days" });
             return;
         }
 
-        const expectedDoses = dayCount * schedule.frequency;
+        const activeFrom = from > schedule.start_date ? from : schedule.start_date;
+        const activeTo = schedule.end_date && schedule.end_date < to ? schedule.end_date : to;
+        const hasActiveDays = activeFrom <= activeTo;
+        const activeDayCount = hasActiveDays
+            ? Math.round(
+                  (new Date(activeTo).getTime() - new Date(activeFrom).getTime()) / 86400000
+              ) + 1
+            : 0;
+        const expectedDoses = activeDayCount * schedule.frequency;
 
-        const doseLogs: any[] = [];
-        let offset = 0;
+        let doseLogs: any[] = [];
 
-        while (true) {
-            const { data: page, error: doseError } = await supabase
-                .from("dose_logs")
-                .select("*")
-                .eq("schedule_id", req.params.id)
-                .eq("user_id", req.user!.id)
-                .gte("log_date", from)
-                .lte("log_date", to)
-                .order("id", { ascending: true })
-                .range(offset, offset + DOSE_LOG_PAGE_SIZE - 1);
+        if (hasActiveDays) {
+            let offset = 0;
+            const DOSE_LOG_PAGE_SIZE = 500;
 
-            if (doseError) {
-                res.status(500).json({ error: "Failed to fetch adherence data" });
-                return;
+            while (true) {
+                const { data: page, error: doseError } = await supabase
+                    .from("dose_logs")
+                    .select("*")
+                    .eq("schedule_id", req.params.id)
+                    .eq("user_id", req.user!.id)
+                    .gte("log_date", activeFrom)
+                    .lte("log_date", activeTo)
+                    .order("id", { ascending: true })
+                    .range(offset, offset + DOSE_LOG_PAGE_SIZE - 1);
+
+                if (doseError) {
+                    res.status(500).json({ error: "Failed to fetch adherence data" });
+                    return;
+                }
+
+                const currentPage = page ?? [];
+                doseLogs.push(...currentPage);
+
+                if (currentPage.length < DOSE_LOG_PAGE_SIZE) break;
+                offset += DOSE_LOG_PAGE_SIZE;
             }
-
-            const currentPage = page ?? [];
-            doseLogs.push(...currentPage);
-
-            if (currentPage.length < DOSE_LOG_PAGE_SIZE) break;
-            offset += DOSE_LOG_PAGE_SIZE;
         }
 
         const takenCount = doseLogs.filter((d) => d.status === "taken").length;
