@@ -11,6 +11,7 @@ python-multipart>=0.0.31
 playwright>=1.49.0          # Headless browser - needed for JS-rendered sites like Jan Aushadhi
 beautifulsoup4>=4.12.0      # HTML parsing for static sites
 requests>=2.33.0            # HTTP requests
+requests>=2.34.2            # HTTP requests
 
 # Data processing
 pandas>=2.2.0               # CSV/tabular data manipulation
@@ -25,6 +26,9 @@ langchain-core>=1.3.3
 
 # thefuzz for fuzzy string matching
 thefuzz==0.22.1
+
+# TensorFlow Lite Inference
+tflite-runtime>=2.14.0
 
 # ASR (Speech-to-Text)
 faster-whisper>=1.1.0
